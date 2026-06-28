@@ -32,32 +32,26 @@ export default {
     await DbService.ensureSchema(env.DB);
     const url = new URL(request.url);
 
-    // بررسی درخواست WebSocket برای اتصال فیلترشکن
-    if (Router.isWebSocketUpgrade(request) && url.pathname === '/') {
+    if (Router.isWebSocketUpgrade(request) && url.pathname === '/In_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh') {
       return await Router.handleWebSocket(request, env, ctx);
     }
 
-    // مسیرهای مربوط به ساب‌اسکریپشن (Sub / Feed)
     if (Router.isSubscriptionPath(url.pathname)) {
       return await Router.handleSubscription(url, env);
     }
 
-    // مسیرهای مربوط به وب سرویس‌ها (API)
     if (url.pathname.startsWith('/api/') || url.pathname === '/locations') {
       return await Router.handleApi(request, url, env, ctx);
     }
 
-    // لود کردن پوسته مدیریتی پنل ( /login نامِ مستعارِ /panel است )
     if (url.pathname === '/panel' || url.pathname === '/login') {
       return await Router.handlePanel(request, env);
     }
 
-    // لود کردن صفحه وضعیت کاربر
     if (url.pathname.startsWith('/status/')) {
       return await Router.handleUserStatus(url, env);
     }
 
-    // نمایش صفحه فیک Nginx برای تمامی مسیرهای متفرقه
     return new Response(HTML_TEMPLATES.nginx, {
       headers: { "Content-Type": "text/html; charset=utf-8" }
     });
@@ -556,11 +550,81 @@ const SubscriptionService = {
     } catch(e) {}
 
     const configArray = [];
-    ips.forEach((ip, ipIndex) => {
+
+    const m1 = decodeURIComponent('%E2%9A%A0%EF%B8%8F%D8%A7%DB%8C%D9%86%20%D9%BE%D9%86%D9%84%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%D9%88%20%D8%BA%DB%8C%D8%B1%20%D9%82%D8%A7%D8%A8%D9%84%20%D9%81%D8%B1%D9%88%D8%B4%20%D8%A7%D8%B3%D8%AA%E2%9A%A0%EF%B8%8F');
+    const m2 = decodeURIComponent('%E2%99%A8%EF%B8%8F%20%40IR_NETLIFY%20%D8%B3%D8%A7%D8%AE%D8%AA%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%E2%99%A8%EF%B8%8F');
+
+    const createFakeConfig = (remarkTitle) => {
+      return {
+        remarks: remarkTitle,
+        version: { min: "25.10.15" },
+        log: { loglevel: "none" },
+        dns: {
+          servers: [
+            { address: "https://8.8.8.8/dns-query", tag: "remote-dns" },
+            { address: "8.8.8.8", domains: ["full:" + host], skipFallback: true }
+          ],
+          queryStrategy: "UseIP",
+          tag: "dns"
+        },
+        inbounds: [
+          {
+            listen: "127.0.0.1", port: 10808, protocol: "socks",
+            settings: { auth: "noauth", udp: true },
+            sniffing: { destOverride: ["http", "tls"], enabled: true, routeOnly: true },
+            tag: "mixed-in"
+          },
+          {
+            listen: "127.0.0.1", port: 10853, protocol: "dokodemo-door",
+            settings: { address: "1.1.1.1", network: "tcp,udp", port: 53 },
+            tag: "dns-in"
+          }
+        ],
+        outbounds: [
+          {
+            protocol: "vle" + "ss",
+            settings: {
+              ["vne" + "xt"]: [{
+                address: "0.0.0.0",
+                port: 1,
+                users: [{ id: user.uuid, encryption: "none" }]
+              }]
+            },
+            ["stream" + "Settings"]: {
+              network: "ws",
+              ["ws" + "Settings"]: { host: host, path: "/In_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh" },
+              security: "none"
+            },
+            tag: "proxy"
+          },
+          { protocol: "dns", settings: { nonIPQuery: "reject" }, tag: "dns-out" },
+          { protocol: "freedom", settings: { domainStrategy: "UseIP" }, tag: "direct" },
+          { protocol: "blackhole", settings: { response: { type: "http" } }, tag: "block" }
+        ],
+        routing: {
+          domainStrategy: "IPIfNonMatch",
+          rules: [
+            { inboundTag: ["mixed-in"], port: 53, outboundTag: "dns-out", type: "field" },
+            { inboundTag: ["dns-in"], outboundTag: "dns-out", type: "field" },
+            { inboundTag: ["remote-dns"], outboundTag: "proxy", type: "field" },
+            { inboundTag: ["dns"], outboundTag: "direct", type: "field" },
+            { domain: ["geosite:private"], outboundTag: "direct", type: "field" },
+            { ip: ["geoip:private"], outboundTag: "direct", type: "field" },
+            { network: "udp", outboundTag: "block", type: "field" },
+            { network: "tcp", outboundTag: "proxy", type: "field" }
+          ]
+        }
+      };
+    };
+
+    configArray.push(createFakeConfig(m1));
+    configArray.push(createFakeConfig(m2));
+
+    ips.forEach((ip) => {
       ports.forEach((portStr) => {
         const isTlsPort = ['443', '2053', '2083', '2087', '2096', '8443'].includes(portStr);
         const tlsVal = isTlsPort ? 'tls' : 'none';
-        const remark = ips.length > 1 ? `${user.username} - IP ${ipIndex + 1} - Port ${portStr}` : `${user.username} - Port ${portStr}`;
+        const remark = user.username + ' | ' + ip + ' | ' + portStr;
         
         const configObj = {
           remarks: remark,
@@ -599,7 +663,7 @@ const SubscriptionService = {
               },
               ["stream" + "Settings"]: {
                 network: "ws",
-                ["ws" + "Settings"]: { host: host, path: "/" },
+                ["ws" + "Settings"]: { host: host, path: "/In_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh" },
                 security: tlsVal,
                 sockopt: { ["dialer" + "Proxy"]: "fragment" }
               },
@@ -668,15 +732,19 @@ const SubscriptionService = {
     const fp = user.fingerprint || 'chrome';
     const links = [];
 
-    ips.forEach((ip, ipIndex) => {
+    const m1 = decodeURIComponent('%E2%9A%A0%EF%B8%8F%D8%A7%DB%8C%D9%86%20%D9%BE%D9%86%D9%84%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%D9%88%20%D8%BA%DB%8C%D8%B1%20%D9%82%D8%A7%D8%A8%D9%84%20%D9%81%D8%B1%D9%88%D8%B4%20%D8%A7%D8%B3%D8%AA%E2%9A%A0%EF%B8%8F');
+    const m2 = decodeURIComponent('%E2%99%A8%EF%B8%8F%20%40IR_NETLIFY%20%D8%B3%D8%A7%D8%AE%D8%AA%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%E2%99%A8%EF%B8%8F');
+
+    links.push(atob('dmxlc3M6Ly8=') + user.uuid + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh#' + encodeURIComponent(m1));
+    links.push(atob('dmxlc3M6Ly8=') + user.uuid + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh#' + encodeURIComponent(m2));
+
+    ips.forEach((ip) => {
       ports.forEach((portStr) => {
         const isTlsPort = ['443', '2053', '2083', '2087', '2096', '8443'].includes(portStr);
         const tlsVal = isTlsPort ? 'tls' : 'none';
-        const remark = ips.length > 1 
-          ? `${user.username}-${ipIndex + 1}-${portStr}` 
-          : `${user.username}-${portStr}`;
+        const remark = user.username + ' | ' + ip + ' | ' + portStr;
         
-        links.push(atob('dmxlc3M6Ly8=') + user.uuid + '@' + ip + ':' + portStr + '?path=%2F&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + '#' + encodeURIComponent(remark));
+        links.push(atob('dmxlc3M6Ly8=') + user.uuid + '@' + ip + ':' + portStr + '?path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + '#' + encodeURIComponent(remark));
       });
     });
 
@@ -2203,7 +2271,20 @@ const HTML_TEMPLATES = {
             <p class="text-gray-500 dark:text-gray-400">کاربری وجود ندارد. برای ساخت اولین کاربر روی دکمه «افزودن کاربر جدید» کلیک کنید.</p>
         </div>
     </main>
-
+<div id="path-warning-modal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300 ease-out">
+    <div class="w-full max-w-md bg-white dark:bg-amoled-card border border-red-500/50 rounded-3xl shadow-2xl overflow-hidden p-6 text-center transition-all transform duration-300 opacity-0 scale-95 ease-out">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 mb-4 shadow-inner">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        </div>
+        <h3 class="font-black text-xl text-gray-900 dark:text-white mb-2">تغییر مهم در ساختار کانفیگ‌ها</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed font-medium">
+            به دلیل ارتقای امنیت و تغییر مسیر (Path) اتصال، کانفیگ‌های قبلی غیرفعال شده‌اند. لطفاً کانفیگ‌های جدید را از لیست کپی کرده و در کلاینت خود جایگزین کنید.
+        </p>
+        <button onclick="closePathWarning()" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-sm transition duration-300 shadow-lg shadow-red-500/25">
+            متوجه شدم، کانفیگ‌های جدید را می‌گیرم
+        </button>
+    </div>
+</div>
     <div id="user-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 opacity-0 pointer-events-none transition-opacity duration-200 ease-out">
         <div id="user-modal-card" class="w-full max-w-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-850 rounded-2xl shadow-xl overflow-hidden transition-[opacity,transform] duration-200 opacity-0 scale-95 ease-out flex flex-col max-h-[90vh] transform-gpu" style="will-change: transform, opacity;">
             <div class="px-6 py-4 border-b border-gray-150 dark:border-zinc-800/80 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-900/30">
@@ -2918,7 +2999,15 @@ const HTML_TEMPLATES = {
                 card.classList.add('opacity-0', 'scale-95');
             }
         }
-
+function closePathWarning() {
+    const modal = document.getElementById('path-warning-modal');
+    const card = modal.querySelector('div');
+    modal.classList.remove('opacity-100', 'pointer-events-auto');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    card.classList.remove('opacity-100', 'scale-100');
+    card.classList.add('opacity-0', 'scale-95');
+    localStorage.setItem('zeus_path_warned_' + CURRENT_VERSION, 'true');
+}
         function getVlessLink(username) {
             const user = window.allUsers.find(u => u.username === username);
             if (!user) return '';
@@ -2934,15 +3023,19 @@ const HTML_TEMPLATES = {
             const fp = user.fingerprint || 'chrome';
             const links = [];
 
-            ips.forEach((ip, ipIndex) => {
+            const m1 = decodeURIComponent('%E2%9A%A0%EF%B8%8F%D8%A7%DB%8C%D9%86%20%D9%BE%D9%86%D9%84%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%D9%88%20%D8%BA%DB%8C%D8%B1%20%D9%82%D8%A7%D8%A8%D9%84%20%D9%81%D8%B1%D9%88%D8%B4%20%D8%A7%D8%B3%D8%AA%E2%9A%A0%EF%B8%8F');
+            const m2 = decodeURIComponent('%E2%99%A8%EF%B8%8F%20%40IR_NETLIFY%20%D8%B3%D8%A7%D8%AE%D8%AA%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%E2%99%A8%EF%B8%8F');
+
+            links.push('vle' + 'ss://' + (user.uuid || '') + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh#' + encodeURIComponent(m1));
+            links.push('vle' + 'ss://' + (user.uuid || '') + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh#' + encodeURIComponent(m2));
+
+            ips.forEach((ip) => {
                 ports.forEach((portStr) => {
                     const isTlsPort = tlsPorts.includes(portStr);
                     const tlsVal = isTlsPort ? 'tls' : 'none';
-                    const remark = ips.length > 1 
-                        ? (user.username + '-' + (ipIndex + 1) + '-' + portStr) 
-                        : (user.username + '-' + portStr);
+                    const remark = user.username + ' | ' + ip + ' | ' + portStr;
                     
-                    links.push('vle' + 'ss://' + (user.uuid || '') + '@' + ip + ':' + portStr + '?path=%2F&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + '#' + encodeURIComponent(remark));
+                    links.push('vle' + 'ss://' + (user.uuid || '') + '@' + ip + ':' + portStr + '?path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + '#' + encodeURIComponent(remark));
                 });
             });
 
@@ -3023,11 +3116,79 @@ const HTML_TEMPLATES = {
             const fp = user.fingerprint || 'chrome';
 
             const configArray = [];
-            ips.forEach((ip, ipIndex) => {
+
+            const m1 = decodeURIComponent('%E2%9A%A0%EF%B8%8F%D8%A7%DB%8C%D9%86%20%D9%BE%D9%86%D9%84%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%D9%88%20%D8%BA%DB%8C%D8%B1%20%D9%82%D8%A7%D8%A8%D9%84%20%D9%81%D8%B1%D9%88%D8%B4%20%D8%A7%D8%B3%D8%AA%E2%9A%A0%EF%B8%8F');
+            const m2 = decodeURIComponent('%E2%99%A8%EF%B8%8F%20%40IR_NETLIFY%20%D8%B3%D8%A7%D8%AE%D8%AA%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%E2%99%A8%EF%B8%8F');
+
+            const createFakeConfig = (remarkTitle) => {
+              return {
+                "remarks": remarkTitle,
+                "version": { "min": "25.10.15" },
+                "log": { "loglevel": "none" },
+                "dns": {
+                  "servers": [
+                    { "address": "https://8.8.8.8/dns-query", "tag": "remote-dns" },
+                    { "address": "8.8.8.8", "domains": ["full:" + host], "skipFallback": true }
+                  ],
+                  "queryStrategy": "UseIP",
+                  "tag": "dns"
+                },
+                "inbounds": [
+                  {
+                    "listen": "127.0.0.1", "port": 10808, "protocol": "socks",
+                    "settings": { "auth": "noauth", "udp": true },
+                    "sniffing": { "destOverride": ["http", "tls"], "enabled": true, "routeOnly": true },
+                    "tag": "mixed-in"
+                  },
+                  {
+                    "listen": "127.0.0.1", "port": 10853, "protocol": "dokodemo-door",
+                    "settings": { "address": "1.1.1.1", "network": "tcp,udp", "port": 53 },
+                    "tag": "dns-in"
+                  }
+                ],
+                "outbounds": [
+                  {
+                    "protocol": "vle" + "ss",
+                    "settings": {
+                      ["vne" + "xt"]: [
+                        { "address": "0.0.0.0", "port": 1, "users": [{ "id": user.uuid, "encryption": "none" }] }
+                      ]
+                    },
+                    ["stream" + "Settings"]: {
+                      "network": "ws",
+                      ["ws" + "Settings"]: { "host": host, "path": "/In_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh" },
+                      "security": "none"
+                    },
+                    "tag": "proxy"
+                  },
+                  { "protocol": "dns", "settings": { "nonIPQuery": "reject" }, "tag": "dns-out" },
+                  { "protocol": "freedom", "settings": { "domainStrategy": "UseIP" }, "tag": "direct" },
+                  { "protocol": "blackhole", "settings": { "response": { "type": "http" } }, "tag": "block" }
+                ],
+                "routing": {
+                  "domainStrategy": "IPIfNonMatch",
+                  "rules": [
+                    { "inboundTag": ["mixed-in"], "port": 53, "outboundTag": "dns-out", "type": "field" },
+                    { "inboundTag": ["dns-in"], "outboundTag": "dns-out", "type": "field" },
+                    { "inboundTag": ["remote-dns"], "outboundTag": "proxy", "type": "field" },
+                    { "inboundTag": ["dns"], "outboundTag": "direct", "type": "field" },
+                    { "domain": ["geosite:private"], "outboundTag": "direct", "type": "field" },
+                    { "ip": ["geoip:private"], "outboundTag": "direct", "type": "field" },
+                    { "network": "udp", "outboundTag": "block", "type": "field" },
+                    { "network": "tcp", "outboundTag": "proxy", "type": "field" }
+                  ]
+                }
+              };
+            };
+
+            configArray.push(createFakeConfig(m1));
+            configArray.push(createFakeConfig(m2));
+
+            ips.forEach((ip) => {
               ports.forEach((portStr) => {
                 const isTlsPort = tlsPorts.includes(portStr);
                 const tlsVal = isTlsPort ? 'tls' : 'none';
-                const remark = ips.length > 1 ? (user.username + ' - IP ' + (ipIndex + 1) + ' - Port ' + portStr) : (user.username + ' - Port ' + portStr);
+                const remark = user.username + ' | ' + ip + ' | ' + portStr;
                 
                 const jsonConfig = {
                   "remarks": remark,
@@ -3064,7 +3225,7 @@ const HTML_TEMPLATES = {
                       },
                       ["stream" + "Settings"]: {
                         "network": "ws",
-                        ["ws" + "Settings"]: { "host": host, "path": "/" },
+                        ["ws" + "Settings"]: { "host": host, "path": "/In_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh" },
                         "security": tlsVal,
                         "sockopt": { ["dialer" + "Proxy"]: "fragment" }
                       },
@@ -3351,7 +3512,7 @@ const HTML_TEMPLATES = {
                 window.location.reload();
             }
         }
-const CURRENT_VERSION = '1.3.3';
+const CURRENT_VERSION = '1.3.5';
 const UPDATE_FIX = "constsCURRENT_VERSION='d.d.d'";
 
 		async function checkForUpdates(isManual = false) {
@@ -3518,7 +3679,15 @@ function applySelectedIps() {
     document.getElementById('input-ips').value = selectedIps.join('\\n');
     toggleIpSelectorModal(false);
 }
-        document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('zeus_path_warned_' + CURRENT_VERSION) !== 'true') {
+            const modal = document.getElementById('path-warning-modal');
+            const card = modal.querySelector('div');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            card.classList.remove('opacity-0', 'scale-95');
+            card.classList.add('opacity-100', 'scale-100');
+        }			
             const versionBadge = document.getElementById('panel-version');
             if (versionBadge) versionBadge.innerText = 'v' + CURRENT_VERSION;
 
@@ -3716,7 +3885,7 @@ function applySelectedIps() {
                     var isTlsPort = ['443', '2053', '2083', '2087', '2096', '8443'].includes(portStr);
                     var tlsVal = isTlsPort ? 'tls' : 'none';
                     var remark = ips.length > 1 ? (u.username + '-' + (ipIndex + 1) + '-' + portStr) : (u.username + '-' + portStr);
-                    links.push('vle' + 'ss://' + (u.uuid || '') + '@' + ip + ':' + portStr + '?path=%2F&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + '#' + encodeURIComponent(remark));
+                    links.push('vle' + 'ss://' + (u.uuid || '') + '@' + ip + ':' + portStr + '?path=%2FIn_Panel_Rayeghan_Ast_Va_Gheyre_Ghabele_Foroosh&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + '#' + encodeURIComponent(remark));
                 });
             });
             return links.join('\\n');
