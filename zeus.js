@@ -2206,30 +2206,31 @@ const HTML_TEMPLATES = {
         </div>
     </div>
 
-    <div id="card-cf-requests" class="bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-orange-400 dark:hover:border-orange-500/50 transition duration-300 relative overflow-hidden group">
-        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-orange-500/10 rounded-full blur-xl group-hover:scale-150 transition duration-500"></div>
-        
-        <div class="flex items-center justify-between relative z-10 mb-2">
-            <span class="text-sm font-semibold text-gray-500 dark:text-zinc-400 whitespace-nowrap">درخواست‌های امروز</span>
-            <div class="p-2 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-xl flex-shrink-0">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            </div>
-        </div>
-        
-        <div class="space-y-2 relative z-10 min-w-0 flex-1">
-            <div class="flex items-baseline gap-1">
-                <span class="text-2xl font-black text-orange-600 dark:text-orange-400 transition-all" id="stat-cf-requests">0</span>
-                <span class="text-xs font-bold text-gray-400">/ 100k</span>
-            </div>
-            <div class="w-full bg-gray-100 dark:bg-zinc-800 rounded-full h-1.5 mt-1">
-                <div id="stat-cf-progress" class="bg-orange-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-            <span class="text-[11px] text-orange-500 dark:text-orange-400 flex items-center justify-between font-medium whitespace-nowrap mt-1">
-                <span>کل: <span id="stat-cf-total">0</span></span>
-                <span dir="ltr">Cloudflare</span>
-            </span>
-        </div>
-    </div>
+	<div id="card-cf-requests" class="bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-orange-400 dark:hover:border-orange-500/50 transition duration-300 relative overflow-hidden group">
+	    <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-orange-500/10 rounded-full blur-xl group-hover:scale-150 transition duration-500"></div>
+	    
+	    <div class="flex items-center justify-between relative z-10 mb-2">
+	        <span class="text-sm font-semibold text-gray-500 dark:text-zinc-400 whitespace-nowrap">ریکوئست‌های روزانه</span>
+	        <div class="p-2 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-xl flex-shrink-0">
+	            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+	        </div>
+	    </div>
+	    
+	    <div class="space-y-2 relative z-10 min-w-0 flex-1">
+	        <div class="flex items-center gap-1">
+	            <span class="text-2xl font-black text-orange-600 dark:text-orange-400 transition-all" id="stat-cf-requests">0</span>
+	            <span class="text-xs font-bold text-gray-400 mr-1">/ 100k</span>
+	            <button id="cf-warning-btn" onclick="openUsageWarning()" class="hidden flex items-center justify-center w-5 h-5 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-full font-bold text-xs animate-bounce shadow-sm border border-red-300 dark:border-red-700 mr-2">!</button>
+	        </div>
+	        <div class="w-full bg-gray-100 dark:bg-zinc-800 rounded-full h-1.5 mt-1">
+	            <div id="stat-cf-progress" class="bg-orange-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+	        </div>
+	        <span class="text-[11px] text-orange-500 dark:text-orange-400 flex items-center justify-between font-medium whitespace-nowrap mt-1">
+	            <span>Total: <span id="stat-cf-total">0</span></span>
+	            <span dir="ltr">Cloudflare</span>
+	        </span>
+	    </div>
+	</div>
 
     <div class="bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500/50 transition duration-300 relative overflow-hidden group">
         <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:scale-150 transition duration-500"></div>
@@ -2350,7 +2351,7 @@ const HTML_TEMPLATES = {
         </div>
         <h3 class="font-black text-xl text-gray-900 dark:text-white mb-2">هشدار محدودیت درخواست روزانه</h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed font-medium">
-            درخواست‌های امروز کلودفلر شما از مرز ۹۰,۰۰۰ عبور کرده است. در صورت عبور از محدودیت رایگان ۱۰۰,۰۰۰ درخواست، دسترسی به پنل و اتصالات تا ساعت ۳:۳۰ بامداد (به وقت ایران) قطع خواهد شد.
+            درخواست‌های روزانه کلودفلر شما از ۹۰,۰۰۰ عبور کرده است. در صورت عبور از محدودیت رایگان ۱۰۰,۰۰۰ درخواست، دسترسی به پنل و اتصالات تا ساعت ۳:۳۰ بامداد (به وقت ایران) قطع خواهد شد.
         </p>
         <button onclick="closeUsageWarning()" class="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-sm transition duration-300 shadow-lg shadow-orange-500/25">
             متوجه شدم
@@ -2738,22 +2739,25 @@ const HTML_TEMPLATES = {
                 document.getElementById('stat-total-usage').innerText = totalGbUsage < 1 ? (totalGbUsage * 1024).toFixed(0) + ' MB' : totalGbUsage.toFixed(2) + ' GB';
                 const cfRequests = data.cfRequestsToday || 0;
                 const reqCard = document.getElementById('card-cf-requests');
+                const warningBtn = document.getElementById('cf-warning-btn');
+
                 if (cfRequests >= 90000) {
                     if (reqCard) {
                         reqCard.className = "bg-red-50 dark:bg-red-950/20 border border-red-500 rounded-2xl p-5 shadow-[0_0_15px_rgba(239,68,68,0.4)] flex flex-col justify-between hover:shadow-md transition duration-300 relative overflow-hidden group animate-pulse";
                     }
+                    if (warningBtn) {
+                        warningBtn.classList.remove('hidden');
+                    }
                     const today = new Date().toISOString().split('T')[0];
                     if (localStorage.getItem('zeus_usage_warned_date') !== today) {
-                        const usageModal = document.getElementById('usage-warning-modal');
-                        const usageCard = usageModal.querySelector('div');
-                        usageModal.classList.remove('opacity-0', 'pointer-events-none');
-                        usageModal.classList.add('opacity-100', 'pointer-events-auto');
-                        usageCard.classList.remove('opacity-0', 'scale-95');
-                        usageCard.classList.add('opacity-100', 'scale-100');
+                        openUsageWarning();
                     }
                 } else {
                     if (reqCard) {
                         reqCard.className = "bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-orange-400 dark:hover:border-orange-500/50 transition duration-300 relative overflow-hidden group";
+                    }
+                    if (warningBtn) {
+                        warningBtn.classList.add('hidden');
                     }
                 }
                 const cfTotal = data.cfRequestsTotal || 0;
@@ -3116,6 +3120,14 @@ function closeUsageWarning() {
     card.classList.add('opacity-0', 'scale-95');
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem('zeus_usage_warned_date', today);
+}
+function openUsageWarning() {
+    const modal = document.getElementById('usage-warning-modal');
+    const card = modal.querySelector('div');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.classList.add('opacity-100', 'pointer-events-auto');
+    card.classList.remove('opacity-0', 'scale-95');
+    card.classList.add('opacity-100', 'scale-100');
 }
         function getVlessLink(username) {
             const user = window.allUsers.find(u => u.username === username);
@@ -3615,7 +3627,7 @@ function closeUsageWarning() {
                 window.location.reload();
             }
         }
-const CURRENT_VERSION = '1.3.8';
+const CURRENT_VERSION = '1.3.9';
 const UPDATE_FIX = "constsCURRENT_VERSION='d.d.d'";
 
 		async function checkForUpdates(isManual = false) {
