@@ -79,9 +79,9 @@
 
 </a>
 
-<a href="https://t.me/IR_NETLIFY">
+<a href="https://t.me/PANEL_ZEUS">
 
-<img  src="https://img.shields.io/badge/Developer-IR__NETLIFY-00792D?style=for-the-badge&logo=telegram&logoColor=white"  alt="Developer">
+<img  src="https://img.shields.io/badge/Developer-PANEL_ZEUS-00792D?style=for-the-badge&logo=telegram&logoColor=white"  alt="Developer">
 
 </a>
 
@@ -259,4 +259,4 @@
 
 * **سازندگان اولیه:** نسخه پایه و ایده اولیه پروژه متعلق به [AG-Morgan](https://github.com/AG-Morgan) و [aradava](https://github.com/aradava) می‌باشد.
 
-* **توسعه‌دهنده فعلی:** ارتقاء پنل، افزودن قابلیت‌های پیشرفته شبکه، طراحی مجدد رابط کاربری و پیاده‌سازی سیستم دیپلوی خودکار توسط [IR_NETLIFY](https://t.me/IR_NETLIFY) انجام شده است.
+* **توسعه‌دهنده فعلی:** ارتقاء پنل، افزودن قابلیت‌های پیشرفته شبکه، طراحی مجدد رابط کاربری و پیاده‌سازی سیستم دیپلوی خودکار توسط [PANEL_ZEUS](https://t.me/PANEL_ZEUS) انجام شده است.
