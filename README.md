@@ -1,23 +1,4 @@
 
-<div  align="center">
-
-  
-
-# 🛑 توجه بسیار مهم 🛑
-
-  
-
-### نسخه 1.7.6 توسط کلودفلر شناسایی شده بود و مسدود میکرد.
-
-**نسخه جدید رو تست کنید اوکی شده.**
-
-  
-
-</div>
-
-  
-
----
 
 <img  src="https://raw.githubusercontent.com/IR-NETLIFY/zeus/refs/heads/main/photos/dark.png"  width="100%"  alt="Zeus Panel Dark Mode"  style="border-radius: 12px; margin-bottom: 15px;">
 
@@ -69,7 +50,7 @@
 
 <a href="https://github.com/IR-NETLIFY/zeus">
 
-<img  src="https://img.shields.io/badge/Version-1.7.11-0052CC?style=for-the-badge&logo=semver&logoColor=white"  alt="Version">
+<img  src="https://img.shields.io/badge/Version-1.8.2-0052CC?style=for-the-badge&logo=semver&logoColor=white"  alt="Version">
 
 </a>
 
