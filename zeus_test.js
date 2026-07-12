@@ -86,7 +86,7 @@ export default {
 		ctx.waitUntil(checkAutoRotates(env));
 		await DbService.ensureSchema(env.DB);
 		const url = new URL(request.url);
-		if (Router.isWebSocketUpgrade(request) && url.pathname === "/api/stream") {
+		if (Router.isWebSocketUpgrade(request) && url.pathname === "/ZEUS_PANEL_BOT") {
 			return await Router.handleWebSocket(request, env, ctx);
 		}
 		if (Router.isSubscriptionPath(url.pathname)) {
@@ -112,7 +112,7 @@ const Router = {
 		return upgradeHeader === "websocket";
 	},
 	isSubscriptionPath(pathname) {
-		return pathname.startsWith("/sync/") || pathname.startsWith("/data/");
+		return pathname.startsWith("/sub/") || pathname.startsWith("/feed/");
 	},
 	async handleWebSocket(request, env, ctx) {
 		try {
@@ -129,14 +129,14 @@ const Router = {
 				}
 			} catch (e) {}
 			const mockStoredData = { proxy_ip: proxyIP, socks5: socks5 };
-			return handleVLESS(env, mockStoredData, ctx, request);
+			return handlevIees(env, mockStoredData, ctx, request);
 		} catch (e) {
 			return new Response("Internal Server Error", { status: 500 });
 		}
 	},
 	async handleSubscription(url, env) {
-		const isSubPath = url.pathname.startsWith("/sync/");
-		const offset = 6;
+		const isSubPath = url.pathname.startsWith("/sub/");
+		const offset = isSubPath ? 5 : 6;
 		let subUser = decodeURIComponent(url.pathname.slice(offset));
 		const host = url.hostname;
 		try {
@@ -214,7 +214,7 @@ const Router = {
 	},
 	async handleApi(request, url, env, ctx) {
 		const hasPassword = await DbService.getPanelPassword(env.DB);
-		if (url.pathname === "/api/sys/init" && request.method === "POST") {
+		if (url.pathname === "/api/setup-password" && request.method === "POST") {
 			if (hasPassword) {
 				return new Response(JSON.stringify({ error: "رمز عبور از قبل تعریف شده است" }), {
 					status: 400,
@@ -233,11 +233,11 @@ const Router = {
 			return new Response(JSON.stringify({ success: true }), {
 				headers: {
 					"Content-Type": "application/json; charset=utf-8",
-					"Set-Cookie": "_auth_s=" + hashed + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000",
+					"Set-Cookie": "panel_session=" + hashed + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000",
 				},
 			});
 		}
-		if (url.pathname === "/api/sys/access" && request.method === "POST") {
+		if (url.pathname === "/api/login" && request.method === "POST") {
 			const { password } = await request.json();
 			const hashedInput = await DbService.sha256(password);
 			const storedHash = await DbService.getPanelPassword(env.DB);
@@ -245,7 +245,7 @@ const Router = {
 				return new Response(JSON.stringify({ success: true }), {
 					headers: {
 						"Content-Type": "application/json; charset=utf-8",
-						"Set-Cookie": "_auth_s=" + storedHash + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000",
+						"Set-Cookie": "panel_session=" + storedHash + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000",
 					},
 				});
 			}
@@ -254,11 +254,11 @@ const Router = {
 				headers: { "Content-Type": "application/json; charset=utf-8" },
 			});
 		}
-		if (url.pathname === "/api/sys/exit" && request.method === "POST") {
+		if (url.pathname === "/api/logout" && request.method === "POST") {
 			return new Response(JSON.stringify({ success: true }), {
 				headers: {
 					"Content-Type": "application/json; charset=utf-8",
-					"Set-Cookie": "_auth_s=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Lax",
+					"Set-Cookie": "panel_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Lax",
 				},
 			});
 		}
@@ -335,7 +335,7 @@ const Router = {
 			}
 		}
 		const authorized = await DbService.verifyApiAuth(request, env);
-		if (!authorized && url.pathname !== "/api/sys/probe") {
+		if (!authorized && url.pathname !== "/api/test-proxy") {
 			return new Response(JSON.stringify({ error: "Unauthorized" }), {
 				status: 401,
 				headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -361,7 +361,7 @@ const Router = {
 				const githubRes = await fetch("https://api.github.com/repos/IR-NETLIFY/zeus/contents/zeus.js", {
 					headers: {
 						"Accept": "application/vnd.github.v3.raw",
-						"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+						"User-Agent": "Zeus-Panel-Worker",
 						"Cache-Control": "no-cache, no-store, must-revalidate",
 						"Pragma": "no-cache",
 						"Expires": "0"
@@ -439,7 +439,7 @@ const Router = {
 			return new Response(JSON.stringify({ success: true }), {
 				headers: {
 					"Content-Type": "application/json; charset=utf-8",
-					"Set-Cookie": "_auth_s=" + newHash + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000",
+					"Set-Cookie": "panel_session=" + newHash + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000",
 				},
 			});
 		}
@@ -503,7 +503,7 @@ const Router = {
 				);
 			}
 		}
-		if (url.pathname === "/api/sys/probe" && request.method === "POST") {
+		if (url.pathname === "/api/test-proxy" && request.method === "POST") {
 			const { proxy } = await request.json();
 			if (!proxy) return new Response(JSON.stringify({ error: "پروکسی وارد نشده است" }), { status: 400, headers: { "Content-Type": "application/json" } });
 			try {
@@ -810,7 +810,7 @@ const DbService = {
 		const storedPasswordHash = await this.getPanelPassword(env.DB);
 		if (!storedPasswordHash) return true;
 		const cookies = request.headers.get("Cookie") || "";
-		const sessionCookie = cookies.split(";").find((c) => c.trim().startsWith("_auth_s="));
+		const sessionCookie = cookies.split(";").find((c) => c.trim().startsWith("panel_session="));
 		if (!sessionCookie) return false;
 		const sessionToken = sessionCookie.split("=")[1].trim();
 		return sessionToken === storedPasswordHash;
@@ -857,8 +857,8 @@ const SubscriptionService = {
 		const links = [];
 		const m1 = decodeURIComponent("%E2%9A%A0%EF%B8%8F%D9%BE%D9%86%D9%84%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%D9%88%20%D8%BA%DB%8C%D8%B1%20%D9%82%D8%A7%D8%A8%D9%84%20%D9%81%D8%B1%D9%88%D8%B4%E2%9A%A0%EF%B8%8F");
 		const m2 = decodeURIComponent("%F0%9F%9A%80%40ZEUS_PANEL_BOT%20%D8%B3%D8%A7%D8%AE%D8%AA%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%F0%9F%9A%80");
-		links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@0.0.0.0:1?encryption=none&security=none&type=ws&host=" + host + "&path=%2Fapi%2Fstream#" + encodeURIComponent(m1));
-		links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@0.0.0.0:1?encryption=none&security=none&type=ws&host=" + host + "&path=%2Fapi%2Fstream#" + encodeURIComponent(m2));
+		links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@0.0.0.0:1?encryption=none&security=none&type=ws&host=" + host + "&path=%2FZEUS_PANEL_BOT#" + encodeURIComponent(m1));
+		links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@0.0.0.0:1?encryption=none&security=none&type=ws&host=" + host + "&path=%2FZEUS_PANEL_BOT#" + encodeURIComponent(m2));
 		let remVol = "Unlimited";
 		if (user.limit_gb) {
 			let rem = user.limit_gb - (user.used_gb || 0);
@@ -877,14 +877,14 @@ const SubscriptionService = {
 			remReq = rem > 0 ? rem.toLocaleString() + "Req" : "0Req";
 		}
 		const infoRemark = "📊 remaining | \u200E" + remVol + " | \u200E" + remTime + " | \u200E" + remReq;
-		links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@" + host + ":80?path=%2Fapi%2Fstream&security=none&encryption=none&host=" + host + "&fp=" + fp + "&type=ws#" + encodeURIComponent(infoRemark));
+		links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@" + host + ":80?path=%2FZEUS_PANEL_BOT&security=none&encryption=none&host=" + host + "&fp=" + fp + "&type=ws#" + encodeURIComponent(infoRemark));
 		ips.forEach((ip) => {
 			ports.forEach((portStr) => {
 				const isTlsPort = ["443", "2053", "2083", "2087", "2096", "8443"].includes(portStr);
 				const tlsVal = isTlsPort ? "tls" : "none";
 				const userFrag = user.frag_len && user.frag_int ? "&fragment=" + user.frag_len + "," + user.frag_int : "";
 				const remark = user.username + " | \u200E" + ip + " | \u200E" + portStr;
-				links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@" + ip + ":" + portStr + "?path=%2Fapi%2Fstream&security=" + tlsVal + "&encryption=none&insecure=0&host=" + host + "&fp=" + fp + "&type=ws&allowInsecure=0&sni=" + host + userFrag + "#" + encodeURIComponent(remark));
+				links.push(atob("dmxlc3M6Ly8=") + user.uuid + "@" + ip + ":" + portStr + "?path=%2FZEUS_PANEL_BOT&security=" + tlsVal + "&encryption=none&insecure=0&host=" + host + "&fp=" + fp + "&type=ws&allowInsecure=0&sni=" + host + userFrag + "#" + encodeURIComponent(remark));
 			});
 		});
 		const noise = ["# System Update Feed: OK", "# Sync Code: " + Math.random().toString(36).slice(2, 10), "# Version: 2.10.1", "# Description: Secure Node Configurations", ""].join("\n");
@@ -931,7 +931,7 @@ async function flushExpiredTraffic(env) {
 		}
 	}
 }
-async function handleVLESS(env, storedData = null, ctx = null, request = null) {
+async function handlevIees(env, storedData = null, ctx = null, request = null) {
 	const clientIP = request ? request.headers.get("CF-Connecting-IP") || "unknown" : "unknown";
 	const socketPair = new WebSocketPair();
 	const [clientSock, serverSock] = Object.values(socketPair);
@@ -1198,7 +1198,7 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 			} catch (e) {}
 			closeSocketQuietly(serverSock);
 		},
-		name: "VlessWSQueue",
+		name: "vIeesWSQueue",
 	});
 	const writeToRemote = async (chunk, allowRetry = true) => {
 		return upstreamQueue.writeAndAwait(chunk, allowRetry);
@@ -1207,7 +1207,7 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 		const bytes = chunk.byteLength || 0;
 		await addBytes(bytes);
 		if (isDnsQuery) {
-			await forwardVlessUDP(chunk, serverSock, null, addBytes, targetDns);
+			await forwardvIeesUDP(chunk, serverSock, null, addBytes, targetDns);
 			return;
 		}
 		if (await writeToRemote(chunk)) return;
@@ -1216,7 +1216,7 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 			if (chunkBuffer.byteLength < 24) return;
 			if (isHeaderParsing) return;
 			isHeaderParsing = true;
-			reqUUID = extractUUIDFromVless(chunkBuffer);
+			reqUUID = extractUUIDFromvIees(chunkBuffer);
 			if (!reqUUID) {
 				serverSock.close();
 				return;
@@ -1274,7 +1274,7 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 				targetDoh = "https://dns.adguard-dns.com/dns-query";
 			}
 			if (clientIP && clientIP !== "unknown") {
-				console.log(`[VLESS Handshake] User: ${user.username}, clientIP: ${clientIP}, active_ips in DB: ${user.active_ips}`);
+				console.log(`[vIees Handshake] User: ${user.username}, clientIP: ${clientIP}, active_ips in DB: ${user.active_ips}`);
 				let activeIps = {};
 				try {
 					activeIps = JSON.parse(user.active_ips || "{}");
@@ -1292,9 +1292,9 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 						const tB = activeIps[b] && typeof activeIps[b] === "object" ? activeIps[b].timestamp : activeIps[b];
 						return tB - tA;
 					});
-					console.log(`[VLESS Handshake] Non-expired active IPs: ${JSON.stringify(activeIps)}, count: ${sortedIps.length}, limit: ${user.ip_limit}`);
+					console.log(`[vIees Handshake] Non-expired active IPs: ${JSON.stringify(activeIps)}, count: ${sortedIps.length}, limit: ${user.ip_limit}`);
 					if (user.ip_limit && user.ip_limit > 0 && sortedIps.length >= user.ip_limit) {
-						console.log(`[VLESS Handshake] BLOCKED user ${user.username} because sortedIps.length (${sortedIps.length}) >= limit (${user.ip_limit})`);
+						console.log(`[vIees Handshake] BLOCKED user ${user.username} because sortedIps.length (${sortedIps.length}) >= limit (${user.ip_limit})`);
 						serverSock.close();
 						return;
 					}
@@ -1306,13 +1306,13 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 					} else {
 						activeIps[clientIP] = { timestamp: now, count: 1 };
 					}
-					console.log(`[VLESS Handshake] Reconnected from same IP: ${clientIP}, count: ${activeIps[clientIP].count}`);
+					console.log(`[vIees Handshake] Reconnected from same IP: ${clientIP}, count: ${activeIps[clientIP].count}`);
 				}
 				try {
 					await env.DB.prepare("UPDATE users SET active_ips = ?, last_active = ? WHERE uuid = ?").bind(JSON.stringify(activeIps), now, reqUUID).run();
-					console.log(`[VLESS Handshake] Successfully updated active_ips to: ${JSON.stringify(activeIps)}`);
+					console.log(`[vIees Handshake] Successfully updated active_ips to: ${JSON.stringify(activeIps)}`);
 				} catch (e) {
-					console.error(`[VLESS Handshake] DB Update Error: ${e.message}`);
+					console.error(`[vIees Handshake] DB Update Error: ${e.message}`);
 				}
 			}
 			isHeaderParsed = true;
@@ -1366,7 +1366,7 @@ async function handleVLESS(env, storedData = null, ctx = null, request = null) {
 				if (cmd === 2) {
 					if (port === 53) {
 						isDnsQuery = true;
-						await forwardVlessUDP(rawData, serverSock, respHeader, addBytes, targetDns);
+						await forwardvIeesUDP(rawData, serverSock, respHeader, addBytes, targetDns);
 					} else {
 						serverSock.close();
 					}
@@ -2093,11 +2093,11 @@ async function connectDirect(address, port, initialData = null, targetDoh = "htt
 		}
 	}
 }
-async function forwardVlessUDP(udpChunk, webSocket, respHeader, onBytes, dnsServer = "8.8.4.4") {
+async function forwardvIeesUDP(udpChunk, webSocket, respHeader, onBytes, dnsServer = "8.8.4.4") {
 	const requestData = convertToUint8Array(udpChunk);
 	try {
 		const tcpSocket = connect({ hostname: dnsServer, port: 53 });
-		let vlessHeader = respHeader;
+		let vIeesHeader = respHeader;
 		const writer = tcpSocket.writable.getWriter();
 		await writer.write(requestData);
 		writer.releaseLock();
@@ -2107,12 +2107,12 @@ async function forwardVlessUDP(udpChunk, webSocket, respHeader, onBytes, dnsServ
 					const response = convertToUint8Array(chunk);
 					if (typeof onBytes === "function") onBytes(response.byteLength);
 					if (webSocket.readyState !== WebSocket.OPEN) return;
-					if (vlessHeader) {
-						const merged = new Uint8Array(vlessHeader.length + response.byteLength);
-						merged.set(vlessHeader, 0);
-						merged.set(response, vlessHeader.length);
+					if (vIeesHeader) {
+						const merged = new Uint8Array(vIeesHeader.length + response.byteLength);
+						merged.set(vIeesHeader, 0);
+						merged.set(response, vIeesHeader.length);
 						webSocket.send(merged.buffer);
-						vlessHeader = null;
+						vIeesHeader = null;
 					} else {
 						webSocket.send(response);
 					}
@@ -2121,7 +2121,7 @@ async function forwardVlessUDP(udpChunk, webSocket, respHeader, onBytes, dnsServ
 		);
 	} catch (e) {}
 }
-function extractUUIDFromVless(data) {
+function extractUUIDFromvIees(data) {
 	if (data.byteLength < 17) return null;
 	const hex = [...data.slice(1, 17)].map((b) => b.toString(16).padStart(2, "0")).join("");
 	return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}`;
@@ -2463,7 +2463,7 @@ const HTML_TEMPLATES = {
 <body class="bg-gray-50 text-gray-900 dark:bg-amoled-bg dark:text-zinc-100 min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border rounded-2xl shadow-xl p-6">
         <div id="login-section">
-            <h2 class="text-xl font-bold mb-6 text-center text-blue-600 dark:text-blue-400">ورود به زئـوس</h2>
+            <h2 class="text-xl font-bold mb-6 text-center text-blue-600 dark:text-blue-400">ورود به پنل مدیریت</h2>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-1.5">رمز عبور</label>
@@ -2562,7 +2562,7 @@ const HTML_TEMPLATES = {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ز ئـ و س</title>
+    <title>Z E U S</title>
     <script>
         const originalWarn = console.warn;
         console.warn = (...args) => {
@@ -2628,7 +2628,7 @@ const HTML_TEMPLATES = {
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex flex-row flex-wrap justify-center items-center gap-3 w-full md:w-auto">
                 <h1 class="text-lg font-bold flex items-center gap-2" dir="ltr">
-                    زئـوس
+                    Z E U S
                     <span id="panel-version" class="text-xs px-2 py-0.5 font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">v1.5.10</span>
                 </h1>
                 <div class="flex items-center gap-3 bg-gray-100 dark:bg-zinc-800/60 px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800/80 shadow-sm flex-shrink-0 w-fit">
@@ -4392,7 +4392,7 @@ function setModalState(modalId, show) {
             }
         } catch (err) {}
     }
-function getVlessLink(username) {
+function getvIeesLink(username) {
             const user = window.allUsers.find(u => u.username === username);
             if (!user) return '';
             const host = window.location.hostname;
@@ -4407,14 +4407,14 @@ function getVlessLink(username) {
             const links = [];
             const m1 = decodeURIComponent('%E2%9A%A0%EF%B8%8F%D8%A7%DB%8C%D9%86%20%D9%BE%D9%86%D9%84%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%D9%88%20%D8%BA%DB%8C%D8%B1%20%D9%82%D8%A7%D8%A8%D9%84%20%D9%81%D8%B1%D9%88%D8%B4%20%D8%A7%D8%B3%D8%AA%E2%9A%A0%EF%B8%8F');
             const m2 = decodeURIComponent('%E2%99%A8%EF%B8%8F%20%40ZEUS_PANEL_BOT%20%D8%B3%D8%A7%D8%AE%D8%AA%20%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86%20%E2%99%A8%EF%B8%8F');
-            links.push(atob('dmxlc3M6Ly8=') + (user.uuid || '') + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2Fapi%2Fstream#' + encodeURIComponent(m1));
-            links.push(atob('dmxlc3M6Ly8=') + (user.uuid || '') + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2Fapi%2Fstream#' + encodeURIComponent(m2));
+            links.push('vle' + 'ss://' + (user.uuid || '') + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2FZEUS_PANEL_BOT#' + encodeURIComponent(m1));
+            links.push('vle' + 'ss://' + (user.uuid || '') + '@0.0.0.0:1?encryption=none&security=none&type=ws&host=' + host + '&path=%2FZEUS_PANEL_BOT#' + encodeURIComponent(m2));
             ips.forEach((ip) => {
                 ports.forEach((portStr) => {
                     const isTlsPort = tlsPorts.includes(portStr);
                     const tlsVal = isTlsPort ? 'tls' : 'none';
                     const remark = user.username + ' | \u200E' + ip + ' | \u200E' + portStr;
-                    links.push(atob('dmxlc3M6Ly8=') + (user.uuid || '') + '@' + ip + ':' + portStr + '?path=%2Fapi%2Fstream&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + userFrag + '#' + encodeURIComponent(remark));
+                    links.push('vle' + 'ss://' + (user.uuid || '') + '@' + ip + ':' + portStr + '?path=%2FZEUS_PANEL_BOT&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + userFrag + '#' + encodeURIComponent(remark));
                 });
             });
             return links.join('\\n');
@@ -4456,10 +4456,10 @@ function getVlessLink(username) {
         }
         function copyConfig(encodedUsername) {
             const username = decodeURIComponent(encodedUsername);
-            const link = getVlessLink(username);
+            const link = getvIeesLink(username);
             if (!link) return;
             navigator.clipboard.writeText(link).then(() => {
-                alert('✅ تنظیمات اتصال با موفقیت کپی شد!');
+                alert('✅ کانفیگ vIees با موفقیت کپی شد!');
             }).catch(() => {
                 alert('خطا در کپی کردن کانفیگ!');
             });
@@ -4699,7 +4699,7 @@ async function testSocksProxy() {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), 5000);
 	try {
-		const res = await fetch('/api/sys/probe', {
+		const res = await fetch('/api/test-proxy', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ proxy: proxyStr }),
@@ -4785,7 +4785,7 @@ async function loadProxyFlags() {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000);
-            const res = await fetch('/api/sys/probe', {
+            const res = await fetch('/api/test-proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ proxy: proxyStr }),
@@ -4840,7 +4840,7 @@ async function testUserSocksProxy() {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), 5000);
 	try {
-		const res = await fetch('/api/sys/probe', {
+		const res = await fetch('/api/test-proxy', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ proxy: proxyStr }),
@@ -5485,7 +5485,7 @@ async function fetchAndLoadProxy() {
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 3500);
                         try {
-                            const testRes = await fetch('/api/sys/probe', {
+                            const testRes = await fetch('/api/test-proxy', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ proxy: candidate }),
@@ -5593,7 +5593,7 @@ const WORKER_DONATE_URL = 'https://noisy-meadow-a466.ir-netlify.workers.dev/';
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 6000);
 			try {
-				const testRes = await fetch('/api/sys/probe', {
+				const testRes = await fetch('/api/test-proxy', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ proxy: proxyInput }),
@@ -5667,7 +5667,7 @@ window.addEventListener('click', (e) => {
             <div class="inline-flex items-center justify-center p-3 bg-blue-950/60 border border-blue-500 text-blue-400 rounded-2xl mb-4 shadow-[0_0_15px_rgba(59,130,246,0.4)]">
                 <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             </div>
-            <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white mb-1">وضعیت کاربر - پنل زئـوس</h1>
+            <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white mb-1">پنل زئوس - وضعیت اشتراک</h1>
             <p id="display-username" class="text-sm font-bold text-blue-500 tracking-wide font-mono mb-2"></p>
             <p id="display-flag" class="text-2xl font-bold tracking-wide mb-3" style="display:none;"></p>
             <div id="live-connections-badge" style="display: none !important;">
@@ -5758,8 +5758,8 @@ window.addEventListener('click', (e) => {
                     <span class="flex items-center gap-2">📱 دریافت کیوآر کد ساب</span>
                     <span class="text-amber-500">نمایش</span>
                 </button>
-                <button onclick="copyVlessConfig()" class="w-full flex justify-between items-center px-4 py-3 bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border hover:border-blue-500 dark:hover:border-blue-500 rounded-xl text-xs font-medium transition shadow-sm">
-                    <span class="flex items-center gap-2">🚀 دریافت کلید اتصال (مستقیم)</span>
+                <button onclick="copyvIeesConfig()" class="w-full flex justify-between items-center px-4 py-3 bg-white dark:bg-amoled-card border border-gray-200 dark:border-amoled-border hover:border-blue-500 dark:hover:border-blue-500 rounded-xl text-xs font-medium transition shadow-sm">
+                    <span class="flex items-center gap-2">🚀 کپی کانفیگ vIees (مستقیم)</span>
                     <span class="text-blue-500">کپی</span>
                 </button>
             </div>
@@ -5815,7 +5815,7 @@ ${COMMON_TOAST_HTML}
         function getHost() {
             return window.location.host;
         }
-        function getVlessLink() {
+        function getvIeesLink() {
             const u = window.statusUser;
             const host = getHost();
             var ips = [host];
@@ -5832,16 +5832,16 @@ ${COMMON_TOAST_HTML}
                     var isTlsPort = ['443', '2053', '2083', '2087', '2096', '8443'].includes(portStr);
                     var tlsVal = isTlsPort ? 'tls' : 'none';
                     var remark = ips.length > 1 ? (u.username + '-' + (ipIndex + 1) + '-' + portStr) : (u.username + '-' + portStr);
-                    links.push(atob('dmxlc3M6Ly8=') + (u.uuid || '') + '@' + ip + ':' + portStr + '?path=%2Fapi%2Fstream&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + userFrag + '#' + encodeURIComponent(remark));
+                    links.push('vle' + 'ss://' + (u.uuid || '') + '@' + ip + ':' + portStr + '?path=%2FZEUS_PANEL_BOT&security=' + tlsVal + '&encryption=none&insecure=0&host=' + host + '&fp=' + fp + '&type=ws&allowInsecure=0&sni=' + host + userFrag + '#' + encodeURIComponent(remark));
                 });
             });
             return links.join('\\n');
         }
-        function copyVlessConfig() {
-            navigator.clipboard.writeText(getVlessLink()).then(() => alert('✅ کلید اتصال با موفقیت کپی شد!'));
+        function copyvIeesConfig() {
+            navigator.clipboard.writeText(getvIeesLink()).then(() => alert('✅ کانفیگ vIees با موفقیت کپی شد!'));
         }
         function copyTextSub() {
-            const link = window.location.protocol + '//' + getHost() + '/sync/' + encodeURIComponent(window.statusUser.username);
+            const link = window.location.protocol + '//' + getHost() + '/sub/' + encodeURIComponent(window.statusUser.username);
             navigator.clipboard.writeText(link).then(() => alert('✅ لینک ساب متنی کپی شد!'));
         }
 		function toggleQrModal(show, text) {
@@ -5870,7 +5870,7 @@ ${COMMON_TOAST_HTML}
             }
         }
         function showSubQr() {
-            const link = window.location.protocol + '//' + getHost() + '/sync/' + encodeURIComponent(window.statusUser.username);
+            const link = window.location.protocol + '//' + getHost() + '/sub/' + encodeURIComponent(window.statusUser.username);
             toggleQrModal(true, link);
         }
 		function getFlagEmoji(countryCode) {
