@@ -53,7 +53,7 @@
 
 <a href="https://github.com/IR-NETLIFY/zeus">
 
-<img  src="https://img.shields.io/badge/Version-1.8.9-0052CC?style=for-the-badge&logo=semver&logoColor=white"  alt="Version">
+<img  src="https://img.shields.io/badge/Version-1.8.10-0052CC?style=for-the-badge&logo=semver&logoColor=white"  alt="Version">
 
 </a>
 
@@ -120,14 +120,22 @@
 
   
 
-## 🚀 راهنمای نصب و استقرار سریع
+# 🚀 راهنمای نصب و استقرار سریع
 
-  
-<p><b>💡 برای راه‌اندازی و مدیریت پنل می‌توانید از طریق ربات تلگرام یا سایت نصب‌کننده اقدام کنید:</b></p>
 
----
 
 <div  align="center">
+
+<a  href="https://dash.cloudflare.com/"  target="_blank">
+
+<img src="https://img.shields.io/badge/Cloudflare_Dashboard-Login-f38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare Dashboard" height="40">
+
+</a>
+<div align="center">
+ابتدا وارد داشبورد کلودفلر شوید، با جیمیل خود وارد حساب کاربری شده و ایمیلتان را تایید کنید و سپس از یکی از روش‌های زیر ادامه دهید.
+</div>
+
+---
 
 <a  href="https://t.me/ZEUS_PANEL_BOT"  target="_blank">
 
