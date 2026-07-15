@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const http = require('http');
 const net = require('net');
 
 const PROXY_DIR = path.join(__dirname, 'proxy');
@@ -104,7 +105,7 @@ function batchGeoLookup(ips) {
         if (ips.length === 0) return resolve([]);
         
         const postData = JSON.stringify(ips);
-        const req = https.request({
+        const req = http.request({
             hostname: 'ip-api.com',
             path: '/batch?fields=query,countryCode',
             method: 'POST',
